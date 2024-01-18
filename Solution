@@ -1,0 +1,177 @@
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Arrays;
+//submitted
+//TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
+// click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
+public class Past9TestCases {
+    public static void main(String[] args) {
+        System.out.println(findHandSum(0, "00 00 00 21 02", ""));
+    }
+
+    public static int findHandSum (int originalRows, String handTiles, String drawPile) {
+        String originalRowsa = originalRows + "";
+        while (originalRowsa.length() < 4)
+            originalRowsa = "0" + originalRowsa;
+        String [] rows = originalRowsa.split("");
+        for (int i = 0; i < 4; i++)
+            rows[i] = "-" + rows[i];
+        int thisTile = 0; //the tile you are starting on (the one after last to be accessed)
+        //set up hand list
+        String[] handAsArray = handTiles.split(" ");
+        ArrayList<String> hand = new ArrayList<>();
+        if (handTiles.length() > 0) {
+            hand.addAll(Arrays.asList(handAsArray));
+            for (int i = 0; i < hand.size(); i++)
+                if (hand.get(i).length() < 2)
+                    hand.set(i, "0" + hand.get(i));
+        }
+        //set up pile list
+        String[] pileAsArray = drawPile.split(" ");
+        ArrayList<String> pile= new ArrayList<>();
+        if (drawPile.length() > 0) {
+            pile.addAll(Arrays.asList(pileAsArray));
+            for (int i = 0; i < pile.size(); i++)
+                if (pile.get(i).length() < 2)
+                    pile.set(i, "0" + pile.get(i));
+        }
+
+        //actually playing the game
+        while (isMove(hand, thisTile, rows, isDouble(rows) > -1) || !hand.isEmpty() && !pile.isEmpty()) {
+            if (isMove(hand, thisTile, rows, isDouble(rows) > -1)) {
+                if (isDouble(rows) > -1) {
+                    int nextRow;
+                    thisTile = isDouble(rows);
+                    for (int i = 0; i < hand.size(); i++) {
+                        if (doubleMoveFront(hand.get(i), thisTile, rows) > -1) {
+                            nextRow = doubleMoveFront(hand.get(i), thisTile, rows);
+                            rows[thisTile] = hand.remove(i);
+                            thisTile++;
+                            if (thisTile > 3)
+                                thisTile %= 4;
+                            break;
+                        }
+                        else {
+                            nextRow = doubleMoveEnd(hand.get(i), thisTile, rows);
+                            if (nextRow > -1) {
+                                hand.set(i, hand.get(i).substring(1) + hand.get(i).charAt(0));
+                                rows[thisTile] = hand.remove(i);
+                                thisTile++;
+                                if (thisTile > 3)
+                                    thisTile %= 4;
+                                break;
+                            }
+                        }
+
+                    }
+                }
+                else {
+                    int nextRow;
+                    int current;
+                    outer:
+                    for (int j = 0; j < hand.size(); j++) {
+                        for (int i = 0; i < 4; i++) {
+                            current = thisTile + i;
+                            if (current > 3)
+                                current %= 4;
+                            if (doubleMoveFront(hand.get(j), current, rows) > -1) {
+                                nextRow = doubleMoveFront(hand.get(j), current, rows);
+                                rows[current] = hand.get(j);
+                                hand.remove(j);
+                                thisTile = current + 1;
+                                if (thisTile > 3)
+                                    thisTile = thisTile % 4;
+                                break outer;
+                            }
+                            else {
+                                nextRow = doubleMoveEnd(hand.get(j), current, rows);
+                                if (nextRow > -1) {
+                                    hand.set(j, hand.get(j).substring(1) + hand.get(j).charAt(0));
+                                    rows[current] = hand.get(j);
+                                    hand.remove(j);
+                                    thisTile = current + 1;
+                                    if (thisTile > 3)
+                                        thisTile = thisTile % 4;
+                                    break outer;
+                                }
+                            }
+                        }
+                    }
+                }
+
+            }
+            else {
+                hand.add(pile.remove(0));
+            }
+        }
+        int result = 0;
+        for (String str : hand) {
+            int int1 = Integer.parseInt(str.substring(0, 1));
+            int int2 = Integer.parseInt(str.substring(1));
+            result += int1;
+            result += int2;
+        }
+        return result;
+    }
+    //for one given tile; returns the row number (1, 2, 3, or 4) or -1 if no move can be made. for the front number
+    public static int nextMoveFront(String tile, int start, String[] rows) {
+
+        int current;
+        for (int i = 0; i < 4; i++) {
+            //finding the index of the current row
+            current = start + i;
+            if (current > 3)
+                current %= 4;
+
+            if (tile.startsWith(rows[current].substring(1)))
+                return current;
+        }
+        return -1;
+
+    }
+    public static int doubleMoveFront(String tile, int start, String[] rows) {
+        if (tile.startsWith(rows[start].substring(1)))
+            return start;
+        return -1;
+    }
+    public static int doubleMoveEnd(String tile, int start, String[] rows) {
+        if (tile.endsWith(rows[start].substring(1)))
+            return start;
+        return -1;
+    }
+    public static int nextMoveEnd(String tile, int start, String[] rows) {
+        int current;
+        for (int i = 0; i < 4; i++) {
+            //finding the index of the current row
+            current = start + i;
+            if (current > 3)
+                current %= 4;
+
+            if (tile.endsWith(rows[current].substring(1)))
+                return current;
+        }
+        return -1;
+    }
+
+    public static int isDouble(String [] rows) {
+        for (int i = 0; i < rows.length; i++)
+            if (rows[i].substring(0, 1).equals(rows[i].substring(1)))
+                return i;
+        return -1;
+    }
+
+    public static boolean isMove(List<String> hand, int start, String[] rows, boolean isDouble) {
+        if (!isDouble) {
+            for (String h : hand)
+                if (nextMoveFront(h, start, rows) > -1 || nextMoveEnd(h, start, rows) > -1)
+                    return true;
+        }
+        else
+        {
+            for (String h : hand)
+                if (doubleMoveFront(h, isDouble(rows), rows) > -1 || doubleMoveEnd(h, isDouble(rows), rows) > -1)
+                    return true;
+        }
+        return false;
+    }
+}
